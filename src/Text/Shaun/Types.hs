@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, UndecidableInstances, OverlappingInstances #-}
 
 module Text.Shaun.Types
   ( ShaunValue(..)
@@ -18,8 +18,16 @@ data ShaunValue
 -- | @Shaun a@ typeclass defines functions to convert type @a@ to and from
 -- @ShaunValue@
 class Shaun a where
-  toShaun :: a -> ShaunValue
+  toShaun   :: a -> ShaunValue
   fromShaun :: ShaunValue -> a
+
+instance Shaun ShaunValue where
+  toShaun = id
+  fromShaun = id
+
+instance (Integral a) => Shaun a where
+  toShaun n = SNumber (fromIntegral n) Nothing
+  fromShaun (SNumber n _) = truncate n
 
 instance Shaun String where
   toShaun = SString
@@ -30,6 +38,10 @@ instance Shaun Double where
   toShaun n = SNumber n Nothing
   fromShaun (SNumber n _) = n
   fromShaun _ = 0
+
+instance Shaun Float where
+  toShaun n = SNumber (fromRational $ toRational n) Nothing
+  fromShaun (SNumber n _) = fromRational $ toRational n
 
 instance Shaun Bool where
   toShaun = SBool

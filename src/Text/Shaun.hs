@@ -1,14 +1,14 @@
 module Text.Shaun
   ( ShaunValue(..)
   , Shaun(..)
-  --, Text.Shaun.Sweeper(..)
+  , prout
   )
 where
 
 import Text.Shaun.Lexer
 import Text.Shaun.Parser
 import Text.Shaun.Types
--- import Text.Shaun.Sweeper
+import Text.Shaun.Sweeper
 
 import Data.List (intersperse, concat)
 import Data.Maybe (fromMaybe)
@@ -37,6 +37,12 @@ instance Read ShaunValue where
       Left _ -> []
       Right r -> [(r, "")]
 
-instance Shaun ShaunValue where
-  toShaun = id
-  fromShaun = id
+prout :: Sweeper String
+prout = do
+  goto "planets" >> at 0 >> goto "name"
+  sunName <- fmap fromShaun get
+
+  back >> goto "body" >> goto "radius"
+  rad <- fmap fromShaun get :: Sweeper Double
+
+  return $ "The radius of the " ++ sunName ++ " is " ++ show rad

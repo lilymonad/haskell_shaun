@@ -11,7 +11,7 @@ import Text.Parsec
 import Text.Parsec.Char
 import Text.Parsec.ByteString
 
-import Data.ByteString hiding (map, filter)
+import Data.ByteString (ByteString(..))
 import Prelude hiding (readFile)
 
 -- | The output data structure of the lexer.
@@ -51,74 +51,106 @@ comTypes = [ Multi "/*" "*/", Multi "(" ")", One "//" ]
 -- | @makeLexer bs@ translates a @ByteString@ SHAUN text into a list of tokens.
 makeLexer :: ByteString -> Either ParseError [Token]
 makeLexer = parse lexP ""
-  where lexP :: Parser [Token]
-        lexP = sepEndBy (keyP <|> try atomP <|> idP <|> commentP) ws
+  where
+    lexP :: Parser [Token]
+    lexP = sepEndBy (keyP <|> try atomP <|> idP <|> commentP) ws
 
-        keyP :: Parser Token
-        keyP     = fmap TKey $ choice (map string kwds)
+    keyP :: Parser Token
+    keyP     = fmap TKey $ choice (map string kwds)
 
-        idP :: Parser Token
-        idP      = fmap TId  $ do
-          f <- letter <|> char '_'
-          n <- many (alphaNum <|> char '_')
-          return (f:n)
+    idP :: Parser Token
+    idP      = fmap TId  $ do
+      f <- letter <|> char '_'
+      n <- many (alphaNum <|> char '_')
+      return (f:n)
 
-        atomP :: Parser Token
-        atomP    = fmap TAtom $ strP <|> boolP <|> numberP
-          where 
-                strP :: Parser Atom
-                strP = fmap AString $ between
-                                        (char '"')
-                                        (char '"')
-                                        (many $ specialChar <|> noneOf "\"")
+    atomP :: Parser Token
+    atomP    = fmap TAtom $ strP <|> boolP <|> numberP
+      where 
+        strP :: Parser Atom
+        strP = fmap AString $ do
+          c <- fmap sourceLine getPosition
 
-                -- handles escaped char
-                specialChar :: Parser Char
-                specialChar = do
-                  char '\\'
-                  anyChar >>= convert
+          s <- between
+                (char '"')
+                (char '"')
+                (many $ specialChar <|> noneOf "\"")
+          format c s
+          where
+            format :: Column -> String -> Parser String
+            format c s = case lines s of
+              [l] -> return l
 
-                  where convert '\\' = return '\\'
-                        convert 'n'  = return '\n'
-                        convert 'r'  = return '\r'
-                        convert 't'  = return '\t'
-                        convert '"'  = return '"'
-                        convert c = parserFail ("Illegal escaped char "++[c])
-                          :: Parser Char
+              -- multiline with an empty first line
+              ("":l1:rest) -> do
+                let nc = min c $ length (takeWhile (==' ') l1)
+                let new_rest = map (\s -> let (sp, r) = span (==' ') s in
+                                            if length sp > nc then
+                                              snd $ splitAt nc s
+                                            else r)
+                                    (l1:rest)
 
-                boolP :: Parser Atom
-                boolP = (string "true" >> return (ABool True))
-                    <|> (string "false" >> return (ABool False))
+                return $ unlines new_rest
 
-                numberP :: Parser Atom
-                numberP = do
-                  s <- option "" (fmap (:"") $ oneOf "-+")
-                  i <- many1 digit
-                  d <- option "0" (char '.' >> many1 digit)
-                  e <- option "" $ do
-                         oneOf "eE"
-                         s <- option '+' (oneOf "-+")
-                         coef <- many1 digit 
-                         return ("e"++[s]++coef)
-
-                  return (ADouble (read (s++i++"."++d++e)))
-
-        commentP :: Parser Token
-        commentP = fmap TComment $ choice $ map (try . toComP) comTypes
-          where toComP :: ComType -> Parser String
-                toComP (Multi l r) = do
-                  string l
-                  mid <- manyTill anyChar (string r)
-                  return (l++mid++r)
-                toComP (One b) = do
-                  string b
-                  manyTill anyChar endOfLine >>= return . (b++)
+              -- multiline without empty first line
+              (l1:rest)  -> do
+                let new_rest = map (\s -> let (sp, r) = span (==' ') s in
+                                            if length sp > c then
+                                              snd $ splitAt c s
+                                            else r)
+                                    rest
+                return $ unlines new_rest
 
 
 
 
-        ws :: Parser ()
-        ws  = skipMany ws1
+        -- handles escaped char
+        specialChar :: Parser Char
+        specialChar = do
+          char '\\'
+          anyChar >>= convert
 
-        ws1 :: Parser Char
-        ws1 = space <|> char ','
+          where convert '\\' = return '\\'
+                convert 'n'  = return '\n'
+                convert 'r'  = return '\r'
+                convert 't'  = return '\t'
+                convert '"'  = return '"'
+                convert c = parserFail ("Illegal escaped char '"++[c]++"'")
+
+        boolP :: Parser Atom
+        boolP = (string "true" >> return (ABool True))
+            <|> (string "false" >> return (ABool False))
+
+        numberP :: Parser Atom
+        numberP = do
+          s <- option "" (fmap (:"") $ oneOf "-+")
+          i <- many1 digit
+          d <- option "0" (char '.' >> many1 digit)
+          e <- option "" $ do
+                 oneOf "eE"
+                 s <- option '+' (oneOf "-+")
+                 coef <- many1 digit 
+                 return ("e"++[s]++coef)
+
+          return (ADouble (read (s++i++"."++d++e)))
+
+    commentP :: Parser Token
+    commentP = fmap TComment $ choice $ map (try . toComP) comTypes
+      where
+        toComP :: ComType -> Parser String
+        toComP (Multi l r) = do
+          string l
+          mid <- manyTill anyChar (string r)
+          return (l++mid++r)
+        toComP (One b) = do
+          string b
+          manyTill anyChar endOfLine >>= return . (b++)
+
+
+
+
+    ws :: Parser ()
+    ws  = skipMany ws1
+
+    ws1 :: Parser Char
+    ws1 = space <|> char ','

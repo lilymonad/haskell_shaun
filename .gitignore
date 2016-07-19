@@ -1,0 +1,8 @@
+*.hi
+*.o
+*.exe
+*.ps
+*.aux
+*.hp
+
+dist/
