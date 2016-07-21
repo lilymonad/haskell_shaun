@@ -36,13 +36,3 @@ instance Read ShaunValue where
    case makeLexer (pack s) >>= parseShaun of
       Left _ -> []
       Right r -> [(r, "")]
-
-prout :: Sweeper String
-prout = do
-  goto "planets" >> at 0 >> goto "name"
-  sunName <- fmap fromShaun get
-
-  back >> goto "body" >> goto "radius"
-  rad <- fmap fromShaun get :: Sweeper Double
-
-  return $ "The radius of the " ++ sunName ++ " is " ++ show rad
