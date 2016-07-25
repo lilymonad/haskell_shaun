@@ -3,6 +3,10 @@
 module Text.Shaun.Types
   ( ShaunValue(..)
   , Shaun(..)
+  , sLength
+  , insert
+  , remove
+  , append
   )
 where
 
@@ -51,3 +55,31 @@ instance Shaun a => Shaun [a] where
   toShaun = SList . map toShaun
   fromShaun (SList l) = map fromShaun l
   fromShaun _ = []
+
+-- | Gives an @SList@ or @SObject@ length, and returns @-1@ for other
+-- constructors
+sLength :: ShaunValue -> Int
+sLength (SList l) = length l
+sLength (SObject l) = length l
+sLength _ = -1
+
+-- | Inserts an attribute into an @SObject@
+insert :: (String, ShaunValue) -> ShaunValue -> ShaunValue
+insert p (SObject l) = SObject (p:l)
+insert _ s = s
+
+-- | Removes an attribute from an @SObject@
+remove :: String -> ShaunValue -> ShaunValue
+remove n (SObject l) = SObject $ remove' l n
+  where
+    remove' ((n,v):xs) n'
+      | n == n' = xs
+      | otherwise = (n,v) : remove' xs n
+remove _ s = s
+
+-- | Adds a value to a @SList@
+append :: ShaunValue -> ShaunValue -> ShaunValue
+append v (SList l) = SList (v:l)
+append _ s = s
+
+

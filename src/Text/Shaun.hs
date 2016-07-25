@@ -1,7 +1,6 @@
 module Text.Shaun
   ( ShaunValue(..)
   , Shaun(..)
-  , prout
   )
 where
 
@@ -10,11 +9,13 @@ import Text.Shaun.Parser
 import Text.Shaun.Types
 import Text.Shaun.Sweeper
 
-import Data.List (intersperse, concat)
+import Data.List (intersperse, concat, length)
 import Data.Maybe (fromMaybe)
 
 import Control.Monad
 import Data.ByteString.Char8 (pack)
+
+import Control.Monad.IO.Class (liftIO)
 
 indent :: String -> String
 indent s = l ++ "\n" ++ unlines (map ("  " ++) ls)

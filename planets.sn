@@ -1,6 +1,5 @@
 planets: [
 	{
-    /* THIS IS SUPER COOL */
     name:"Sun"
     body:{
       right_ascension:286.13
@@ -10,7 +9,7 @@ planets: [
       GM:132712440018
       diffuse:"tex/sun/diffuse.dds"
       is_star:true
-      mean_color:[4.0,4.0,4.0] /* LOLILOL */
+      mean_color:[4.0,4.0,4.0]
       albedo:400
     }
 	}
@@ -25,7 +24,7 @@ planets: [
       arg:6.702195884630474E+01 // lel
       m0:2.746499628827846E+02
     }
-    body:{ ( et oui moi aussi je suis un com )
+    body:{
       radius:2439.7
       right_ascension:281.01
       declination:61.45

@@ -10,7 +10,7 @@ name:                SNIHs
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             0.3.2.0
+version:             0.3.4.0
 
 -- A short (one-line) description of the package.
 synopsis:            Haskell implementation of SHAUN notation language
@@ -57,7 +57,7 @@ library
   other-extensions:    TypeSynonymInstances, FlexibleInstances
   
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.8 && <4.9, bytestring >=0.10 && <0.11, parsec >=3.1 && <3.2, mtl >= 2.2.1, split
+  build-depends:       base >=4.8 && <4.9, bytestring >=0.10 && <0.11, parsec >=3.1 && <3.2, mtl >= 2.2.1, split, transformers
   
   -- Directories containing source files.
   hs-source-dirs:      src
