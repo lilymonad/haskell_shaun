@@ -10,7 +10,7 @@ name:                SNIHs
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             0.4.4.0
+version:             0.5.4.0
 
 -- A short (one-line) description of the package.
 synopsis:            Haskell implementation of SHAUN notation language

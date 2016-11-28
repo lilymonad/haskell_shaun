@@ -50,7 +50,7 @@ data SwPath
   deriving (Eq)
 
 data SweeperT m a = SweeperT { runSweeperT :: SwPath -> m (a, SwPath) }
-type Sweeper = SweeperT Identity
+type Sweeper = SweeperT (Either SwException)
 
 instance (MonadThrow m) => MonadThrow (SweeperT m) where
   throwM = lift . throwM
@@ -175,8 +175,8 @@ withSweeperT :: (Monad m) => SweeperT m a -> ShaunValue -> m a
 withSweeperT s v = fmap fst $ runSweeperT s (Root v)
 
 -- | Runs a @Sweeper@ and returns a computed value
-withSweeper :: Sweeper a -> ShaunValue -> a
-withSweeper s v = runIdentity $ withSweeperT s v
+withSweeper :: Sweeper a -> ShaunValue -> Either SwException a
+withSweeper s v = withSweeperT s v
 
 -- | Performs a @Sweeper@ action without changing the position in the tree
 peek :: (Monad m) => SweeperT m a -> SweeperT m a
@@ -187,4 +187,3 @@ peek sw = SweeperT $ \sv -> do
 -- | Apply a function to the current @ShaunValue@
 modify :: (Monad m) => (ShaunValue -> ShaunValue) -> SweeperT m ()
 modify f = get >>= set . f
-
