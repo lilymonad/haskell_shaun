@@ -14,6 +14,7 @@ module Text.Shaun.Sweeper
   , getAt
   , back
   , get
+  , set
   , withSweeperT
   , withSweeper
   , path
