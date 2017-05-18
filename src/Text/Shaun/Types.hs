@@ -51,7 +51,7 @@ instance Shaun Bool where
   toShaun = SBool
   fromShaun (SBool b) = b
 
-instance Shaun a => Shaun [a] where
+instance {-# OVERLAPS #-} Shaun a => Shaun [a] where
   toShaun = SList . map toShaun
   fromShaun (SList l) = map fromShaun l
   fromShaun _ = []
