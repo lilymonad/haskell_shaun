@@ -19,7 +19,7 @@ import Control.Monad.IO.Class (liftIO)
 
 indent :: String -> String
 indent s = l ++ "\n" ++ unlines (map ("  " ++) ls)
-  where (l:ls) = lines s
+  where (l:ls) = case lines s of [] -> [""]; a -> a
 
 instance Show ShaunValue where
   show (SBool b) = if b then "true" else "false"

@@ -19,6 +19,7 @@ module Text.Shaun.Sweeper
   , withSweeper
   , path
   , getPath
+  , top
   , peek
   , modify
   )
@@ -30,6 +31,8 @@ import Control.Monad.Identity
 import Data.List.Split (splitOn)
 
 import Data.Maybe
+import Data.Map as Map hiding (lookup, foldl, map)
+import Data.Array as Arr
 
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
@@ -44,11 +47,9 @@ data SwException
   | NotAnObject
   deriving (Show, Exception)
 
-data SwPath
-  = Root ShaunValue
-  | FromObject String SwPath ShaunValue
-  | FromList Int SwPath ShaunValue
-  deriving (Eq)
+data SwCrumb = FromObject String ShaunValue | FromList Int ShaunValue deriving (Eq)
+
+type SwPath = (ShaunValue, [SwCrumb])
 
 data SweeperT m a = SweeperT { runSweeperT :: SwPath -> m (a, SwPath) }
 type Sweeper = SweeperT (Either SwException)
@@ -90,9 +91,7 @@ instance MonadIO m => MonadIO (SweeperT m) where
   liftIO = lift . liftIO
 
 getSwObject :: (MonadThrow m) => String -> SwPath -> m ShaunValue
-getSwObject s (FromObject _ _ o) = getObject s o
-getSwObject s (FromList _ _ o) = getObject s o
-getSwObject s (Root o) = getObject s o
+getSwObject s (o, _) = getObject s o
 
 getObject s (SObject o) = case lookup s o of
   Nothing -> throwM AttributeNotFound
@@ -100,31 +99,22 @@ getObject s (SObject o) = case lookup s o of
 getObject s _ = throwM NotAnObject
 
 swat :: (MonadThrow m) => Int -> SwPath -> m ShaunValue
-swat i (FromObject _ _ (SList l)) = if length l > i
+swat i ((SList l), _) = if length l > i
                           then return (l !! i)
                           else throwM OutOfRange
-
-swat i (FromList _ _ (SList l)) = if length l > i
-                          then return (l !! i)
-                          else throwM OutOfRange
-
-swat i (Root (SList l)) = if length l > i
-                          then return (l !! i)
-                          else throwM OutOfRange
-
 swat _ _ = throwM NotAList
 
 -- | Go to an @SObject@'s attribute
 to :: (MonadThrow m) => String -> SweeperT m ()
-to s = SweeperT $ \sv0 -> do
-  sv1 <- getSwObject s sv0
-  return ((), FromObject s sv0 sv1)
+to s = SweeperT $ \(sv0, crumb) -> do
+  sv1 <- getSwObject s (sv0, crumb)
+  return ((), (sv1, (FromObject s sv0):crumb))
 
 -- | Go at a @SList@'s index
 at :: (MonadThrow m) => Int -> SweeperT m ()
-at i = SweeperT $ \sv0 -> do
-  sv1 <- swat i sv0
-  return ((), FromList i sv0 sv1)
+at i = SweeperT $ \(sv0, crumb) -> do
+  sv1 <- swat i (sv0, crumb)
+  return ((), (sv1, (FromList i sv0):crumb))
 
 -- | Perform a @to@ action and returns the current @ShaunValue@
 -- @getTo attr = to attr >> get@
@@ -152,28 +142,24 @@ getPath p = path p >> get
 
 -- | Moves backward in the tree
 back :: (Monad m) => SweeperT m ()
-back = SweeperT $ \sv0 -> case sv0 of
-  (FromObject _ b _) -> return ((), b)
-  (FromList _ b _) -> return ((), b)
-  Root _ -> return ((), sv0)
+back = SweeperT $ \(sv0, crumb) -> case crumb of
+  (FromObject s b : crumb') -> return ((), (setObjectAttribute s sv0 b, crumb'))
+  (FromList i b : crumb') -> return ((), (setListIndex i sv0 b, crumb'))
+  _ -> return ((), (sv0, []))
 
+setObjectAttribute str val (SObject m) = SObject $ Map.toList $ Map.insert str val $ Map.fromList m
+setListIndex id val (SList l) = SList $ Arr.elems ((Arr.listArray (0, length l) l) Arr.// [(id,val)]) 
 -- | Returns the current @ShaunValue@ the sweeper is at.
 get :: (Monad m) => SweeperT m ShaunValue
-get = SweeperT $ \sv0 -> case sv0 of
-  FromObject _ _ ret -> return (ret, sv0)
-  FromList _ _ ret -> return (ret, sv0)
-  Root ret -> return (ret, sv0)
+get = SweeperT $ \(sv0, crumb) -> return (sv0, (sv0, crumb))
 
 -- | Changes the current @ShaunValue@ with a new one.
 set :: (Monad m) => ShaunValue -> SweeperT m ()
-set sv = SweeperT $ \sv0 -> case sv0 of
-  FromObject i sp _ -> return ((), FromObject i sp sv)
-  FromList i sp _ -> return ((), FromList i sp sv)
-  Root _ -> return ((), Root sv)
+set sv = SweeperT $ \(sv0, crumb) -> return ((), (sv, crumb))
 
 -- | Runs a @SweeperT@ with any monad @m@ and returns the computed value wrapped into @m@
 withSweeperT :: (Monad m) => SweeperT m a -> ShaunValue -> m a
-withSweeperT s v = fmap fst $ runSweeperT s (Root v)
+withSweeperT s v = fmap fst $ runSweeperT s (v, [])
 
 -- | Runs a @Sweeper@ and returns a computed value
 withSweeper :: Sweeper a -> ShaunValue -> Either SwException a
@@ -181,9 +167,20 @@ withSweeper s v = withSweeperT s v
 
 -- | Performs a @Sweeper@ action without changing the position in the tree
 peek :: (Monad m) => SweeperT m a -> SweeperT m a
-peek sw = SweeperT $ \sv -> do
-  (ret, _) <- runSweeperT sw sv
-  return (ret, sv)
+peek sw = SweeperT $ \(sv, crumb) -> do
+  (ret, (sv', [])) <- runSweeperT (do a <- sw; top; return a) (sv, [])
+  return (ret, (sv', crumb))
+
+-- | Gets to the root @ShaunValue@
+top :: (Monad m) => SweeperT m ()
+top = do
+  cr <- getCrumbs
+  case cr of
+    [] -> return ()
+    _  -> back >> top
+
+getCrumbs :: (Monad m) => SweeperT m [SwCrumb]
+getCrumbs = SweeperT $ \(a, b) -> return (b, (a,b))
 
 -- | Apply a function to the current @ShaunValue@
 modify :: (Monad m) => (ShaunValue -> ShaunValue) -> SweeperT m ()
