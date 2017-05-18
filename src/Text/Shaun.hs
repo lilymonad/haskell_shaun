@@ -23,7 +23,9 @@ indent s = l ++ "\n" ++ unlines (map ("  " ++) ls)
 
 instance Show ShaunValue where
   show (SBool b) = if b then "true" else "false"
-  show (SString s) = '"' : s ++ "\""
+  show (SString s)
+    | length (lines s) > 1 = "\"\n" ++ s ++ "\""
+    | otherwise            = "\"" ++ s ++ "\""
   show (SNumber n mu) = show n ++ fromMaybe "" mu
 
   show (SObject l) = "\n{ " ++ indent ((foldl showObj "" l)) ++ "}"

@@ -29,7 +29,7 @@ instance Shaun ShaunValue where
   toShaun = id
   fromShaun = id
 
-instance (Integral a) => Shaun a where
+instance {-# OVERLAPS #-} (Integral a) => Shaun a where
   toShaun n = SNumber (fromIntegral n) Nothing
   fromShaun (SNumber n _) = truncate n
 

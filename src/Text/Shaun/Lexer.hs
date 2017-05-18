@@ -53,7 +53,7 @@ makeLexer :: ByteString -> Either ParseError [Token]
 makeLexer = parse lexP ""
   where
     lexP :: Parser [Token]
-    lexP = sepEndBy (keyP <|> try atomP <|> idP <|> commentP) ws
+    lexP = ws >> (sepEndBy (keyP <|> try atomP <|> idP <|> commentP) ws)
 
     keyP :: Parser Token
     keyP     = fmap TKey $ choice (map string kwds)
@@ -69,7 +69,7 @@ makeLexer = parse lexP ""
       where 
         strP :: Parser Atom
         strP = fmap AString $ do
-          c <- fmap sourceLine getPosition
+          c <- fmap sourceColumn getPosition
 
           s <- between
                 (char '"')
@@ -79,6 +79,7 @@ makeLexer = parse lexP ""
           where
             format :: Column -> String -> Parser String
             format c s = case lines s of
+	      []  -> return ""
               [l] -> return l
 
               -- multiline with an empty first line
@@ -90,7 +91,7 @@ makeLexer = parse lexP ""
                                             else r)
                                     (l1:rest)
 
-                return $ unlines new_rest
+                return $ init $ unlines new_rest
 
               -- multiline without empty first line
               (l1:rest)  -> do
@@ -98,8 +99,8 @@ makeLexer = parse lexP ""
                                             if length sp > c then
                                               snd $ splitAt c s
                                             else r)
-                                    rest
-                return $ unlines new_rest
+                                    (l1:rest)
+                return $ init $ unlines new_rest
 
 
 
