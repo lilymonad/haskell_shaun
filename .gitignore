@@ -6,3 +6,4 @@
 *.hp
 
 dist/
+.stack-work/
