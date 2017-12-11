@@ -7,7 +7,6 @@
 module Text.Shaun.Sweeper
   ( SweeperT
   , Sweeper
-  , SwException(..)
   , to
   , getTo
   , at
@@ -40,19 +39,12 @@ import Control.Monad.Trans.Class
 import Control.Monad.Catch
 import Control.Monad.Except
 
-data SwException
-  = OutOfRange
-  | AttributeNotFound
-  | NotAList
-  | NotAnObject
-  deriving (Show, Exception)
-
 data SwCrumb = FromObject String ShaunValue | FromList Int ShaunValue deriving (Eq)
 
 type SwPath = (ShaunValue, [SwCrumb])
 
 data SweeperT m a = SweeperT { runSweeperT :: SwPath -> m (a, SwPath) }
-type Sweeper = SweeperT (Either SwException)
+type Sweeper = SweeperT (Either ShaunException)
 
 instance (MonadThrow m) => MonadThrow (SweeperT m) where
   throwM = lift . throwM
@@ -162,7 +154,7 @@ withSweeperT :: (Monad m) => SweeperT m a -> ShaunValue -> m a
 withSweeperT s v = fmap fst $ runSweeperT s (v, [])
 
 -- | Runs a @Sweeper@ and returns a computed value
-withSweeper :: Sweeper a -> ShaunValue -> Either SwException a
+withSweeper :: Sweeper a -> ShaunValue -> Either ShaunException a
 withSweeper s v = withSweeperT s v
 
 -- | Performs a @Sweeper@ action without changing the position in the tree

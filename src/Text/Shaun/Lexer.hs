@@ -14,6 +14,8 @@ import Text.Parsec.ByteString
 import Data.ByteString (ByteString(..))
 import Prelude hiding (readFile)
 
+import Control.Monad.Catch (throwM)
+
 -- | The output data structure of the lexer.
 data Token
   = TKey String
@@ -35,10 +37,10 @@ instance Shaun Atom where
   toShaun (ABool b) = SBool b
   toShaun (ADouble d) = SNumber d Nothing
 
-  fromShaun (SString s) = AString s
-  fromShaun (SBool b) = ABool b
-  fromShaun (SNumber d _) = ADouble d
-  fromShaun _ = error "Can't convert Shaun to Atom"
+  fromShaun (SString s) = return $ AString s
+  fromShaun (SBool b) = return $ ABool b
+  fromShaun (SNumber d _) = return $ ADouble d
+  fromShaun _ = throwM $ Custom "Can't convert Shaun to Atom"
 
 kwds = [ "{", "}", "[", "]", ":" ]
 

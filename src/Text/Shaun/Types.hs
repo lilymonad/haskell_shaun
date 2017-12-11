@@ -7,8 +7,27 @@ module Text.Shaun.Types
   , insert
   , remove
   , append
+  , ShaunException(..)
   )
 where
+
+import Control.Monad.Catch
+-- import Control.Monad.Except
+import Control.Monad
+
+-- | @ShaunException@ represents an exception while processing a @ShaunValue@.
+data ShaunException
+  = OutOfRange
+  | AttributeNotFound
+  | NotAList
+  | NotAnObject
+  | NotAString
+  | NotANumber
+  | NotABool
+  | Custom String
+  deriving (Show)
+
+instance Exception ShaunException
 
 -- | @ShaunValue@ represents a Haskell encoded SHAUN value.
 data ShaunValue
@@ -23,38 +42,41 @@ data ShaunValue
 -- @ShaunValue@
 class Shaun a where
   toShaun   :: a -> ShaunValue
-  fromShaun :: ShaunValue -> a
+  fromShaun :: (MonadThrow m) => ShaunValue -> m a
 
 instance Shaun ShaunValue where
   toShaun = id
-  fromShaun = id
+  fromShaun = return
 
 instance {-# OVERLAPS #-} (Integral a) => Shaun a where
   toShaun n = SNumber (fromIntegral n) Nothing
-  fromShaun (SNumber n _) = truncate n
+  fromShaun (SNumber n _) = return $ truncate n
+  fromShaun _ = throwM NotANumber
 
 instance Shaun String where
   toShaun = SString
-  fromShaun (SString s) = s
-  fromShaun _ = ""
+  fromShaun (SString s) = return s
+  fromShaun _ = throwM NotAString
 
 instance Shaun Double where
   toShaun n = SNumber n Nothing
-  fromShaun (SNumber n _) = n
-  fromShaun _ = 0
+  fromShaun (SNumber n _) = return n
+  fromShaun _ = throwM NotANumber
 
 instance Shaun Float where
   toShaun n = SNumber (fromRational $ toRational n) Nothing
-  fromShaun (SNumber n _) = fromRational $ toRational n
+  fromShaun (SNumber n _) = return $ fromRational $ toRational n
+  fromShaun _ = throwM NotANumber
 
 instance Shaun Bool where
   toShaun = SBool
-  fromShaun (SBool b) = b
+  fromShaun (SBool b) = return b
+  fromShaun _ = throwM NotABool
 
 instance {-# OVERLAPS #-} Shaun a => Shaun [a] where
   toShaun = SList . map toShaun
-  fromShaun (SList l) = map fromShaun l
-  fromShaun _ = []
+  fromShaun (SList l) = mapM fromShaun l
+  fromShaun _ = throwM NotAList
 
 -- | Gives an @SList@ or @SObject@ length, and returns @-1@ for other
 -- constructors
