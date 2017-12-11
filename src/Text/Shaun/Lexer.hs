@@ -30,16 +30,19 @@ data Atom
   = AString String
   | ABool Bool
   | ADouble Double
+  | ANull
   deriving (Show)
 
 instance Shaun Atom where
   toShaun (AString s) = SString s
   toShaun (ABool b) = SBool b
   toShaun (ADouble d) = SNumber d Nothing
+  toShaun ANull = SNull
 
   fromShaun (SString s) = return $ AString s
   fromShaun (SBool b) = return $ ABool b
   fromShaun (SNumber d _) = return $ ADouble d
+  fromShaun SNull = return ANull
   fromShaun _ = throwM $ Custom "Can't convert Shaun to Atom"
 
 kwds = [ "{", "}", "[", "]", ":" ]
@@ -136,6 +139,9 @@ makeLexer = parse lexP ""
                  return ("e"++[s]++coef)
 
           return (ADouble (read (s++i++"."++d++e)))
+
+        nullP :: Parser Atom
+        nullP = (string "null" >> return ANull)
 
     commentP :: Parser Token
     commentP = fmap TComment $ choice $ map (try . toComP) comTypes

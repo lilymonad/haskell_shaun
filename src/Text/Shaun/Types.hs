@@ -36,6 +36,7 @@ data ShaunValue
   | SNumber Double (Maybe String)
   | SString String
   | SBool Bool
+  | SNull
   deriving (Eq)
 
 -- | @Shaun a@ typeclass defines functions to convert type @a@ to and from
