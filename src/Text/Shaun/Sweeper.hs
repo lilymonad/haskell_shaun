@@ -54,7 +54,8 @@ instance (MonadCatch m) => MonadCatch (SweeperT m) where
 
 instance MonadError e m => MonadError e (SweeperT m) where
   throwError = lift . throwError
-  catchError m h = SweeperT $ \sv -> (runSweeperT m sv) `catchError` (\e -> runSweeperT (h e) sv)
+  catchError m h =
+    SweeperT $ \sv -> (runSweeperT m sv) `catchError` (\e -> runSweeperT (h e) sv)
 
 instance Functor m => Functor (SweeperT m) where
   fmap f (SweeperT { runSweeperT = s }) =
@@ -139,8 +140,10 @@ back = SweeperT $ \(sv0, crumb) -> case crumb of
   (FromList i b : crumb') -> return ((), (setListIndex i sv0 b, crumb'))
   _ -> return ((), (sv0, []))
 
-setObjectAttribute str val (SObject m) = SObject $ Map.toList $ Map.insert str val $ Map.fromList m
-setListIndex id val (SList l) = SList $ Arr.elems ((Arr.listArray (0, length l) l) Arr.// [(id,val)]) 
+setObjectAttribute str val (SObject m) =
+  SObject $ Map.toList $ Map.insert str val $ Map.fromList m
+setListIndex id val (SList l) =
+  SList $ Arr.elems ((Arr.listArray (0, length l) l) Arr.// [(id,val)]) 
 -- | Returns the current @ShaunValue@ the sweeper is at.
 get :: (Monad m) => SweeperT m ShaunValue
 get = SweeperT $ \(sv0, crumb) -> return (sv0, (sv0, crumb))

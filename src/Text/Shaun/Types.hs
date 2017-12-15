@@ -105,4 +105,3 @@ append :: ShaunValue -> ShaunValue -> ShaunValue
 append v (SList l) = SList (v:l)
 append _ s = s
 
-

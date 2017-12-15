@@ -29,7 +29,7 @@ author:              Arthur Blanleuil
 
 -- An email address to which users can send suggestions, bug reports, and 
 -- patches.
-maintainer:          lalaoulemache@gmail.com
+maintainer:          arthur.blanleuil@gmail.com
 
 -- A copyright notice.
 -- copyright:           
@@ -64,4 +64,3 @@ library
   
   -- Base language which the package is written in.
   default-language:    Haskell2010
-  
