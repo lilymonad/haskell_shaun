@@ -1,5 +1,5 @@
 # SNIHs
-(SHAUN)[https://github.com/ablanleuil/SHAUN] (implementation) In Haskell
+[SHAUN](https://github.com/ablanleuil/SHAUN) (implementation) In Haskell
 
 # Build
 ## Cabal
