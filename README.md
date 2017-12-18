@@ -2,10 +2,19 @@
 SHAUN (implementation) In Haskell
 
 # Build
-Simply build this library with cabal
-
+## Cabal
 ```
     cabal configure
     cabal build
     cabal install
+```
+## ghc-pkg
+```
+    # runhaskell Setup.hs configure --ghc
+    # runhaskell Setup.hs build
+    # runhaskell Setup.hs install
+```
+## Haskell Stack
+```
+    stack install
 ```
