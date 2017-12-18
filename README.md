@@ -1,5 +1,5 @@
 # SNIHs
-SHAUN (implementation) In Haskell
+(SHAUN)[https://github.com/ablanleuil/SHAUN] (implementation) In Haskell
 
 # Build
 ## Cabal
@@ -10,9 +10,9 @@ SHAUN (implementation) In Haskell
 ```
 ## ghc-pkg
 ```
-    # runhaskell Setup.hs configure --ghc
-    # runhaskell Setup.hs build
-    # runhaskell Setup.hs install
+    runhaskell Setup.hs configure --ghc
+    runhaskell Setup.hs build
+    runhaskell Setup.hs install
 ```
 ## Haskell Stack
 ```
