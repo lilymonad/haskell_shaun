@@ -64,3 +64,7 @@ library
   
   -- Base language which the package is written in.
   default-language:    Haskell2010
+
+  -- GHC options
+  -- remove -dynamic if you want to compile with static libraries
+  ghc-options: -dynamic -O2
